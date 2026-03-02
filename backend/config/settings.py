@@ -83,7 +83,11 @@ ASGI_APPLICATION = 'config.asgi.application'
 
 DB_ENGINE = os.getenv('DJANGO_DB_ENGINE', 'django.db.backends.postgresql')
 DB_CONN_MAX_AGE = int(os.getenv('DJANGO_DB_CONN_MAX_AGE', '60'))
-DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL')
+DATABASE_URL = (
+    os.getenv('DATABASE_URL')
+    or os.getenv('POSTGRES_URL')
+    or os.getenv('POSTGRES_URL_NON_POOLING')
+)
 if DB_ENGINE in {'sqlite', 'django.db.backends.sqlite3'}:
     DATABASES = {
         'default': {
