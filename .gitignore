@@ -1,0 +1,26 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.cursor/
+
+# Python backend
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+backend/.venv/
+backend/.env
+
+# Node frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.vercel/
+npm-debug.log*
+
+# Local env files
+.env
+.env.*
+!.env.example
