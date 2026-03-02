@@ -86,6 +86,8 @@ export default function BillingScreen() {
   const [feedback, setFeedback] = useState<string>('');
   const [feedbackType, setFeedbackType] = useState<'error' | 'success'>('success');
   const [loading, setLoading] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [page, setPage] = useState<number>(1);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -306,6 +308,24 @@ export default function BillingScreen() {
     return amounts.reverse();
   }, [invoices]);
   const maxChart = useMemo(() => Math.max(...sixMonthData, 1), [sixMonthData]);
+  const filteredInvoices = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) {
+      return invoices;
+    }
+    return invoices.filter((invoice) =>
+      [invoice.id, invoice.date, invoice.amount, invoice.status].some((field) => field.toLowerCase().includes(query))
+    );
+  }, [invoices, searchTerm]);
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredInvoices.length / 10)), [filteredInvoices.length]);
+  const paginatedInvoices = useMemo(() => {
+    const start = (page - 1) * 10;
+    return filteredInvoices.slice(start, start + 10);
+  }, [filteredInvoices, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, invoices.length]);
 
   return (
     <ConsoleLayout activeRoute="billing">
@@ -428,7 +448,13 @@ export default function BillingScreen() {
             </button>
           </div>
           <div className="billing-filter-row">
-            <input className="field-input" placeholder="Filtrer..." readOnly type="text" />
+            <input
+              className="field-input"
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Filtrer..."
+              type="text"
+              value={searchTerm}
+            />
             <button className="secondary-button narrow" onClick={handleExportInvoices} type="button">
               Voir toutes les factures
             </button>
@@ -437,42 +463,39 @@ export default function BillingScreen() {
             <table className="billing-table">
               <thead>
                 <tr>
-                  <th>Mois</th>
-                  <th>Année</th>
+                  <th>ID facture</th>
+                  <th>Date</th>
                   <th>Montant</th>
                   <th>Statut</th>
                   <th aria-label="Action" />
                 </tr>
               </thead>
               <tbody>
-                {invoices.map((invoice) => {
-                  const [month, dayWithComma, year] = invoice.date.split(' ');
-                  return (
-                    <tr key={invoice.id}>
-                      <td>{month}</td>
-                      <td>{year || dayWithComma || '—'}</td>
-                      <td>{invoice.amount}</td>
-                      <td>
-                        <span className={`billing-status billing-status-${invoiceStatusTone(invoice.status)}`}>
-                          {invoice.status}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          className="billing-link-button"
-                          onClick={() => handleDownloadInvoice(invoice)}
-                          type="button"
-                        >
-                          Download
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {!invoices.length && (
+                {paginatedInvoices.map((invoice) => (
+                  <tr key={invoice.id}>
+                    <td>{invoice.id}</td>
+                    <td>{invoice.date}</td>
+                    <td>{invoice.amount}</td>
+                    <td>
+                      <span className={`billing-status billing-status-${invoiceStatusTone(invoice.status)}`}>
+                        {invoice.status}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className="billing-link-button"
+                        onClick={() => handleDownloadInvoice(invoice)}
+                        type="button"
+                      >
+                        Download
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {!paginatedInvoices.length && (
                   <tr>
                     <td className="billing-empty-row" colSpan={5}>
-                      No invoices yet.
+                      Aucune facture trouvée.
                     </td>
                   </tr>
                 )}
@@ -480,10 +503,15 @@ export default function BillingScreen() {
             </table>
           </div>
           <div className="billing-table-pager">
-            <button className="secondary-button narrow" disabled type="button">
+            <button className="secondary-button narrow" disabled={page <= 1} onClick={() => setPage((prev) => Math.max(1, prev - 1))} type="button">
               Previous
             </button>
-            <button className="secondary-button narrow" disabled={!invoices.length} type="button">
+            <button
+              className="secondary-button narrow"
+              disabled={page >= totalPages}
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              type="button"
+            >
               Next
             </button>
           </div>
