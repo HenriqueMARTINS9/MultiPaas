@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import ConsoleLayout from './ConsoleLayout';
+import { IconNavBilling } from './icons';
 import { downloadTextFile } from '../../lib/download';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
 const PLAN_ORDER = ['starter', 'pro', 'scale'] as const;
 const PLAN_PRICE: Record<string, number> = { pro: 7900, scale: 19900, starter: 2900 };
-const PLAN_LABEL: Record<string, string> = { pro: 'Pro', scale: 'Scale', starter: 'Starter' };
+const PLAN_LABEL: Record<string, string> = { pro: 'Pro', scale: 'Scale', starter: 'No plan' };
 const PLAN_DESC: Record<string, string> = {
-  pro: 'Includes 2 TB storage, 20 containers, analytics and priority support.',
-  scale: 'Includes 10 TB storage, 120 containers, advanced analytics and SLA.',
-  starter: 'Includes 512 GB storage, 5 containers, and standard support.'
+  pro: 'Pro features with analytics and priority support.',
+  scale: 'Scale features with higher capacity and SLA.',
+  starter: 'No active paid subscription.'
 };
 
 type Invoice = {
@@ -36,10 +37,18 @@ type SummaryPayload = {
   };
 };
 
-function amountToNumber(value: string): number | null {
+type SessionUser = {
+  email?: string;
+};
+
+function amountToNumber(value: string): number {
   const normalized = value.replace(/[^0-9.,-]/g, '').replace(',', '.');
   const numeric = Number(normalized);
-  return Number.isFinite(numeric) ? numeric : null;
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function toEuro(value: number) {
+  return `${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 }
 
 function invoiceStatusTone(status: string): 'paid' | 'pending' | 'failed' | 'neutral' {
@@ -66,13 +75,13 @@ function nextPlan(plan: string) {
 
 export default function BillingScreen() {
   const [email, setEmail] = useState<string>('demo@example.com');
-  const [plan, setPlan] = useState<string>('pro');
-  const [paymentBrand, setPaymentBrand] = useState<string>('VISA');
-  const [paymentLast4, setPaymentLast4] = useState<string>('2481');
-  const [paymentExpiry, setPaymentExpiry] = useState<string>('08/28');
-  const [currentMonth, setCurrentMonth] = useState<string>('$79.00');
-  const [projected, setProjected] = useState<string>('$96.30');
-  const [nextInvoiceDate, setNextInvoiceDate] = useState<string>('Apr 01, 2026');
+  const [plan, setPlan] = useState<string>('starter');
+  const [paymentBrand, setPaymentBrand] = useState<string>('Not set');
+  const [paymentLast4, setPaymentLast4] = useState<string>('0000');
+  const [paymentExpiry, setPaymentExpiry] = useState<string>('--/--');
+  const [currentMonth, setCurrentMonth] = useState<string>('0.00 €');
+  const [projected, setProjected] = useState<string>('0.00 €');
+  const [nextInvoiceDate, setNextInvoiceDate] = useState<string>('—');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [feedback, setFeedback] = useState<string>('');
   const [feedbackType, setFeedbackType] = useState<'error' | 'success'>('success');
@@ -87,7 +96,7 @@ export default function BillingScreen() {
       return;
     }
     try {
-      const user = JSON.parse(rawUser) as { email?: string };
+      const user = JSON.parse(rawUser) as SessionUser;
       if (user.email) {
         setEmail(user.email);
       }
@@ -147,7 +156,7 @@ export default function BillingScreen() {
       const payload = (await postJson('/api/billing/checkout/', {
         amount_cents: PLAN_PRICE[upgradedPlan],
         currency: 'eur',
-        description: `Upgrade to ${PLAN_LABEL[upgradedPlan]} plan`,
+        description: `Upgrade to ${PLAN_LABEL[upgradedPlan]}`,
         email,
         plan: upgradedPlan
       })) as { checkout_url?: string };
@@ -186,16 +195,34 @@ export default function BillingScreen() {
     }
   }
 
+  async function handleCancelSubscription() {
+    try {
+      setLoading(true);
+      await postJson('/api/billing/subscription/', {
+        email,
+        plan: 'starter'
+      });
+      setFeedbackType('success');
+      setFeedback('Subscription moved to no-plan tier.');
+      await loadSummary(email);
+    } catch (error) {
+      setFeedbackType('error');
+      setFeedback(error instanceof Error ? error.message : 'Unable to cancel subscription.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleUpdateCard() {
     try {
       setLoading(true);
       const nextMonth = String(((new Date().getMonth() + 2) % 12) || 12).padStart(2, '0');
       const nextYear = String((new Date().getFullYear() + 2) % 100).padStart(2, '0');
       await postJson('/api/billing/payment-method/', {
-        brand: paymentBrand,
+        brand: paymentBrand === 'Not set' ? 'VISA' : paymentBrand,
         email,
         expiry: `${nextMonth}/${nextYear}`,
-        last4: paymentLast4
+        last4: paymentLast4 === '0000' ? '2481' : paymentLast4
       });
       setFeedbackType('success');
       setFeedback('Payment method updated.');
@@ -247,192 +274,201 @@ export default function BillingScreen() {
     downloadTextFile(content, `${invoice.id}.txt`, 'text/plain;charset=utf-8');
   }
 
-  const currentPlanLabel = useMemo(() => PLAN_LABEL[plan] || 'Pro', [plan]);
-  const currentPlanDescription = useMemo(() => PLAN_DESC[plan] || PLAN_DESC.pro, [plan]);
-  const usagePercent = useMemo(() => {
-    const currentValue = amountToNumber(currentMonth);
-    const planValue = (PLAN_PRICE[plan] || PLAN_PRICE.pro) / 100;
-    if (!currentValue || !planValue) {
-      return 63;
+  function handleScrollInvoices() {
+    if (typeof window === 'undefined') {
+      return;
     }
-    return Math.max(8, Math.min(100, Math.round((currentValue / planValue) * 100)));
-  }, [currentMonth, plan]);
-  const paidInvoices = useMemo(
-    () => invoices.filter((invoice) => invoiceStatusTone(invoice.status) === 'paid').length,
-    [invoices]
-  );
-  const nextInvoiceCountdown = useMemo(() => {
-    const parsed = Date.parse(nextInvoiceDate);
-    if (Number.isNaN(parsed)) {
-      return nextInvoiceDate;
+    const target = document.getElementById('recent-invoices');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  const currentPlanLabel = useMemo(() => PLAN_LABEL[plan] || 'No plan', [plan]);
+  const currentPlanDescription = useMemo(() => PLAN_DESC[plan] || PLAN_DESC.starter, [plan]);
+  const currentAmount = useMemo(() => amountToNumber(currentMonth), [currentMonth]);
+  const projectedAmount = useMemo(() => amountToNumber(projected), [projected]);
+  const serviceAmount = useMemo(() => currentAmount * 0.965, [currentAmount]);
+  const objectStorageAmount = useMemo(() => Math.max(currentAmount - serviceAmount, 0), [currentAmount, serviceAmount]);
+  const servicePercent = useMemo(() => {
+    if (currentAmount <= 0) {
+      return 0;
     }
-    const days = Math.ceil((parsed - Date.now()) / (24 * 60 * 60 * 1000));
-    if (days <= 0) {
-      return 'Due today';
+    return Math.round((serviceAmount / currentAmount) * 100);
+  }, [currentAmount, serviceAmount]);
+  const sixMonthData = useMemo(() => {
+    const fallback = [54, 118, 134, 123, 149, 165, 214, 254];
+    if (!invoices.length) {
+      return fallback;
     }
-    return `In ${days} day${days > 1 ? 's' : ''}`;
-  }, [nextInvoiceDate]);
+    const amounts = invoices.slice(0, 8).map((item) => amountToNumber(item.amount));
+    while (amounts.length < 8) {
+      amounts.push(fallback[amounts.length]);
+    }
+    return amounts.reverse();
+  }, [invoices]);
+  const maxChart = useMemo(() => Math.max(...sixMonthData, 1), [sixMonthData]);
 
   return (
     <ConsoleLayout activeRoute="billing">
-      <section className="billing-screen" data-node-id="206:22131">
-        <div className="billing-head">
-          <div className="billing-head-copy">
-            <h1 className="console-h1">Billing</h1>
-            <p className="console-subtext">Manage your subscription, payment method, and invoice history.</p>
-          </div>
-          <div className="billing-head-actions">
-            <button
-              className="secondary-button narrow"
-              disabled={loading}
-              onClick={() => loadSummary(email)}
-              type="button"
-            >
-              {loading ? 'Refreshing...' : 'Refresh'}
-            </button>
-            <button className="secondary-button narrow" onClick={handleExportInvoices} type="button">
-              Export CSV
-            </button>
-          </div>
-        </div>
+      <section className="billing-screen billing-figma-screen" data-node-id="206:22131">
+        <header className="billing-figma-header">
+          <h1 className="console-h1 with-icon">
+            <IconNavBilling />
+            <span>Billing</span>
+          </h1>
+          <p className="console-subtext">Manage your subscription and billing details.</p>
+        </header>
 
-        <div className="billing-overview-grid">
-          <article className="billing-plan-card">
-            <div className="billing-plan-top">
-              <div className="billing-plan-meta">
-                <div className="billing-card-head">
-                  <h2 className="console-h4">Current Plan</h2>
-                  <span className="billing-badge">{currentPlanLabel}</span>
-                </div>
-                <p className="billing-caption">{currentPlanDescription}</p>
+        <article className="billing-figma-panel">
+          <h2 className="console-h4">Billing Information</h2>
+          <p className="console-caption">Manage your subscription and billing details</p>
+
+          <div className="billing-info-grid">
+            <div className="billing-info-card">
+              <p className="billing-label">Current Plan</p>
+              <p className="billing-plan-value">{currentPlanLabel}</p>
+              <p className="console-caption">{currentPlanDescription}</p>
+              <div className="billing-actions">
+                <button className="secondary-button narrow" disabled={loading} onClick={handleChangePlan} type="button">
+                  Change plan
+                </button>
+                <button className="primary-button narrow" disabled={loading} onClick={handleUpgradePlan} type="button">
+                  Update Plan
+                </button>
               </div>
-              <div className="billing-price-wrap">
-                <p className="billing-price">
-                  {currentMonth}
-                  <span>/month</span>
+            </div>
+
+            <div className="billing-info-card">
+              <p className="billing-label">Next Billing</p>
+              <p className="billing-next-main">{nextInvoiceDate}</p>
+              <p className="billing-next-secondary">{projected}</p>
+              <p className="console-caption">Estimated next invoice amount</p>
+            </div>
+          </div>
+
+          <div className="billing-payment-row">
+            <div className="billing-payment-main">
+              <p className="billing-label">Payment Method</p>
+              <p className="billing-payment-title">
+                {paymentBrand} •••• •••• •••• {paymentLast4}
+              </p>
+              <p className="console-caption">Expiry {paymentExpiry}</p>
+            </div>
+            <button className="secondary-button narrow" disabled={loading} onClick={handleUpdateCard} type="button">
+              Edit
+            </button>
+          </div>
+
+          <div className="billing-actions">
+            <button className="secondary-button narrow" onClick={handleScrollInvoices} type="button">
+              View invoices
+            </button>
+            <button className="secondary-button narrow" disabled={loading} onClick={handleAddMethod} type="button">
+              Update payment
+            </button>
+            <button className="billing-danger-button" disabled={loading} onClick={handleCancelSubscription} type="button">
+              Cancel subscription
+            </button>
+          </div>
+        </article>
+
+        <div className="billing-consumption-grid">
+          <article className="billing-figma-panel">
+            <h2 className="console-h4">Consommation actuelle</h2>
+            <div className="billing-donut-layout">
+              <div
+                className="billing-donut"
+                style={{
+                  background: `conic-gradient(#16a249 0 ${servicePercent}%, #cde8d5 ${servicePercent}% 100%)`
+                }}
+              >
+                <div className="billing-donut-inner">
+                  <strong>{toEuro(currentAmount)}</strong>
+                  <span>HT</span>
+                </div>
+              </div>
+              <div className="billing-legend">
+                <p>
+                  <span className="legend-dot service" />
+                  Bare Metal <strong>{toEuro(serviceAmount)}</strong>
+                </p>
+                <p>
+                  <span className="legend-dot object" />
+                  Object Storage <strong>{toEuro(objectStorageAmount)}</strong>
                 </p>
               </div>
             </div>
-
-            <div className="billing-kpi-row">
-              <div className="billing-kpi">
-                <p className="billing-kpi-label">Current month</p>
-                <p className="billing-kpi-value">{currentMonth}</p>
-              </div>
-              <div className="billing-kpi">
-                <p className="billing-kpi-label">Projected</p>
-                <p className="billing-kpi-value">{projected}</p>
-              </div>
-              <div className="billing-kpi">
-                <p className="billing-kpi-label">Next invoice</p>
-                <p className="billing-kpi-value">{nextInvoiceCountdown}</p>
-              </div>
-            </div>
-
-            <div className="billing-progress-wrap">
-              <div className="billing-progress">
-                <span style={{ width: `${usagePercent}%` }} />
-              </div>
-              <p className="billing-progress-label">{usagePercent}% of monthly compute quota used</p>
-            </div>
-            <div className="billing-actions">
-              <button className="primary-button narrow" disabled={loading} onClick={handleUpgradePlan} type="button">
-                Upgrade Plan
-              </button>
-              <button className="secondary-button narrow" disabled={loading} onClick={handleChangePlan} type="button">
-                Change Plan
-              </button>
-            </div>
           </article>
 
-          <article className="billing-method-card">
-            <div className="billing-card-head">
-              <h2 className="console-h4">Payment Method</h2>
-              <span className="billing-mini-tag">Default</span>
-            </div>
-            <p className="billing-caption">Default card</p>
-            <div className="billing-method">
-              <div className="billing-method-chip">{paymentBrand}</div>
-              <div>
-                <p className="billing-method-title">•••• •••• •••• {paymentLast4}</p>
-                <p className="billing-method-caption">Expires {paymentExpiry}</p>
-              </div>
-            </div>
-            <div className="billing-contact">
-              <p className="billing-contact-label">Billing contact</p>
-              <p className="billing-contact-value">{email}</p>
-            </div>
-            <div className="billing-actions">
-              <button className="secondary-button narrow" disabled={loading} onClick={handleUpdateCard} type="button">
-                Update Card
+          <article className="billing-figma-panel">
+            <div className="billing-chart-head">
+              <h2 className="console-h4">Consommation sur 6 mois</h2>
+              <button className="billing-link-button" type="button">
+                Afficher les détails
               </button>
-              <button className="secondary-button narrow" disabled={loading} onClick={handleAddMethod} type="button">
-                Add Method
-              </button>
+            </div>
+            <div className="billing-bars">
+              {sixMonthData.map((value, index) => (
+                <div className="billing-bar-col" key={`${value}-${index}`}>
+                  <span className="billing-bar-value">{Math.round(value)}</span>
+                  <div className="billing-bar-track">
+                    <span className="billing-bar-fill" style={{ height: `${Math.max(10, (value / maxChart) * 100)}%` }} />
+                  </div>
+                  <span className="billing-bar-label">T{index + 1}</span>
+                </div>
+              ))}
             </div>
           </article>
         </div>
 
-        <div className="billing-stats-grid">
-          <article className="billing-stat-card">
-            <p className="billing-stat-label">Current Month</p>
-            <p className="billing-stat-value">{currentMonth}</p>
-          </article>
-          <article className="billing-stat-card">
-            <p className="billing-stat-label">Projected</p>
-            <p className="billing-stat-value">{projected}</p>
-          </article>
-          <article className="billing-stat-card">
-            <p className="billing-stat-label">Next Invoice</p>
-            <p className="billing-stat-value">{nextInvoiceDate}</p>
-          </article>
-          <article className="billing-stat-card">
-            <p className="billing-stat-label">Paid Invoices</p>
-            <p className="billing-stat-value">{paidInvoices}</p>
-          </article>
-        </div>
-
-        <section className="billing-table-card">
+        <article className="billing-figma-panel" id="recent-invoices">
           <div className="billing-table-head">
-            <div>
-              <h2 className="console-h4">Invoice History</h2>
-              <p className="billing-caption">Latest invoices and downloadable receipts.</p>
-            </div>
-            {loading && <span className="billing-loading-pill">Syncing...</span>}
+            <h2 className="console-h4">Factures récentes</h2>
+            <button className="primary-button narrow" onClick={handleExportInvoices} type="button">
+              Convert
+            </button>
+          </div>
+          <div className="billing-filter-row">
+            <input className="field-input" placeholder="Filtrer..." readOnly type="text" />
+            <button className="secondary-button narrow" onClick={handleExportInvoices} type="button">
+              Voir toutes les factures
+            </button>
           </div>
           <div className="billing-table-wrap">
             <table className="billing-table">
               <thead>
                 <tr>
-                  <th>Invoice ID</th>
-                  <th>Date</th>
-                  <th>Amount</th>
-                  <th>Status</th>
+                  <th>Mois</th>
+                  <th>Année</th>
+                  <th>Montant</th>
+                  <th>Statut</th>
                   <th aria-label="Action" />
                 </tr>
               </thead>
               <tbody>
-                {invoices.map((invoice) => (
-                  <tr key={invoice.id}>
-                    <td>{invoice.id}</td>
-                    <td>{invoice.date}</td>
-                    <td>{invoice.amount}</td>
-                    <td>
-                      <span className={`billing-status billing-status-${invoiceStatusTone(invoice.status)}`}>
-                        {invoice.status}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        className="billing-link-button"
-                        onClick={() => handleDownloadInvoice(invoice)}
-                        type="button"
-                      >
-                        Download
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {invoices.map((invoice) => {
+                  const [month, dayWithComma, year] = invoice.date.split(' ');
+                  return (
+                    <tr key={invoice.id}>
+                      <td>{month}</td>
+                      <td>{year || dayWithComma || '—'}</td>
+                      <td>{invoice.amount}</td>
+                      <td>
+                        <span className={`billing-status billing-status-${invoiceStatusTone(invoice.status)}`}>
+                          {invoice.status}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          className="billing-link-button"
+                          onClick={() => handleDownloadInvoice(invoice)}
+                          type="button"
+                        >
+                          Download
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {!invoices.length && (
                   <tr>
                     <td className="billing-empty-row" colSpan={5}>
@@ -443,7 +479,36 @@ export default function BillingScreen() {
               </tbody>
             </table>
           </div>
-        </section>
+          <div className="billing-table-pager">
+            <button className="secondary-button narrow" disabled type="button">
+              Previous
+            </button>
+            <button className="secondary-button narrow" disabled={!invoices.length} type="button">
+              Next
+            </button>
+          </div>
+        </article>
+
+        <div className="billing-bottom-grid">
+          <article className="billing-figma-panel">
+            <h2 className="console-h4">Information de facturation</h2>
+            <div className="billing-empty-box">
+              <p className="console-caption">Current month: {currentMonth}</p>
+              <p className="console-caption">Projected: {projectedAmount ? toEuro(projectedAmount) : projected}</p>
+              <p className="console-caption">Plan: {currentPlanLabel}</p>
+            </div>
+          </article>
+          <article className="billing-figma-panel">
+            <h2 className="console-h4">Contact de facturation</h2>
+            <div className="billing-empty-box">
+              <p className="console-caption">{email}</p>
+              <p className="console-caption">
+                Card: {paymentBrand} •••• {paymentLast4}
+              </p>
+              <p className="console-caption">Next billing date: {nextInvoiceDate}</p>
+            </div>
+          </article>
+        </div>
 
         {feedback && (
           <p className={`console-inline-feedback ${feedbackType === 'error' ? 'is-error' : 'is-success'}`}>

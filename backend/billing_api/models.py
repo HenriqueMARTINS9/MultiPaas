@@ -9,10 +9,10 @@ class BillingProfile(models.Model):
     ]
 
     email = models.EmailField(unique=True)
-    plan = models.CharField(max_length=24, choices=PLAN_CHOICES, default='pro')
-    payment_brand = models.CharField(max_length=24, default='VISA')
-    payment_last4 = models.CharField(max_length=4, default='2481')
-    payment_expiry = models.CharField(max_length=7, default='08/28')
+    plan = models.CharField(max_length=24, choices=PLAN_CHOICES, default='starter')
+    payment_brand = models.CharField(max_length=24, default='Not set')
+    payment_last4 = models.CharField(max_length=4, default='0000')
+    payment_expiry = models.CharField(max_length=7, default='--/--')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

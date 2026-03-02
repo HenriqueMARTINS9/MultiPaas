@@ -102,6 +102,22 @@ Optional env vars:
 - Error `400/409`:
   - `{"detail":"..."}`
 
+- `GET /api/auth/profile/?email=user@example.com`
+- Success `200`:
+  - `{"user":{"id":2,"email":"user@example.com","first_name":"...","last_name":"...","account_type":"personal|company","profile_photo":"..."}}`
+
+- `POST /api/auth/profile/`
+- Body:
+  - `{"email":"user@example.com","first_name":"...","last_name":"...","account_type":"personal|company","profile_photo":"..."}`
+- Success `200`:
+  - `{"message":"Profile updated.","user":{...}}`
+
+- `POST /api/auth/change-password/`
+- Body:
+  - `{"email":"user@example.com","current_password":"...","new_password":"...","confirm_password":"..."}`
+- Success `200`:
+  - `{"message":"Password changed successfully."}`
+
 - `GET /api/billing/summary/?email=user@example.com`
 - Success `200`:
   - Billing profile, stats, and invoice list

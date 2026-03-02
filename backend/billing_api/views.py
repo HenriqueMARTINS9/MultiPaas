@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from uuid import uuid4
 
@@ -24,7 +24,12 @@ PLAN_PRICES_CENTS = {'starter': 2900, 'pro': 7900, 'scale': 19900}
 
 
 def _money(cents: int):
-    return f'${Decimal(cents) / Decimal(100):.2f}'
+    return f'{Decimal(cents) / Decimal(100):.2f} €'
+
+
+def _next_invoice_date_text():
+    next_month_first_day = (date.today().replace(day=28) + timedelta(days=4)).replace(day=1)
+    return next_month_first_day.strftime('%b %d, %Y')
 
 
 def _profile(email: str):
@@ -56,7 +61,7 @@ class BillingSummaryView(APIView):
                 'stats': {
                     'current_month': _money(latest_amount_cents),
                     'projected': _money(projected),
-                    'next_invoice_date': 'Apr 01, 2026'
+                    'next_invoice_date': _next_invoice_date_text()
                 },
                 'invoices': [
                     {

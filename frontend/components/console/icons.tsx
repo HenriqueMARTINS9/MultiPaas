@@ -6,10 +6,21 @@ function BaseIcon(props: IconProps) {
   return <svg fill="none" height="16" viewBox="0 0 16 16" width="16" {...props} />;
 }
 
-export function IconSidebar(props: IconProps) {
+export function IconMenuOpen(props: IconProps) {
   return (
     <BaseIcon {...props}>
-      <path d="M3 3.5H6.5V12.5H3V3.5ZM9.5 3.5H13V7.5H9.5V3.5ZM9.5 9H13V12.5H9.5V9Z" fill="currentColor" />
+      <path d="M2.5 4H13.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
+      <path d="M2.5 8H13.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
+      <path d="M2.5 12H13.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
+    </BaseIcon>
+  );
+}
+
+export function IconMenuClose(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M3 8H13" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
+      <path d="M7 4L3 8L7 12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3" />
     </BaseIcon>
   );
 }
@@ -18,7 +29,7 @@ export function IconLogout(props: IconProps) {
   return (
     <BaseIcon {...props}>
       <path
-        d="M9.25 4.5V3.25H12.75V12.75H9.25V11.5H11.5V4.5H9.25ZM8.5 11L7.6 10.1L9.57 8.12H3V6.87H9.57L7.6 4.9L8.5 4L12 7.5L8.5 11Z"
+        d="M9.5 4.5V3H13V13H9.5V11.5H11.5V4.5H9.5ZM8 11L6.95 9.95L8.83 8.08H2.75V6.92H8.83L6.95 5.05L8 4L11.75 7.5L8 11Z"
         fill="currentColor"
       />
     </BaseIcon>
@@ -39,8 +50,10 @@ export function IconUser(props: IconProps) {
 export function IconNavDashboard(props: IconProps) {
   return (
     <BaseIcon {...props}>
-      <rect height="9" rx="1" stroke="currentColor" width="11" x="2.5" y="3.5" />
-      <path d="M2.5 6.75H13.5" stroke="currentColor" />
+      <rect height="4.5" rx="0.8" stroke="currentColor" width="4.5" x="2.75" y="3" />
+      <rect height="4.5" rx="0.8" stroke="currentColor" width="4.5" x="8.75" y="3" />
+      <rect height="4.5" rx="0.8" stroke="currentColor" width="4.5" x="2.75" y="8.5" />
+      <rect height="4.5" rx="0.8" stroke="currentColor" width="4.5" x="8.75" y="8.5" />
     </BaseIcon>
   );
 }
@@ -49,9 +62,9 @@ export function IconNavAnalytics(props: IconProps) {
   return (
     <BaseIcon {...props}>
       <path d="M3 12.5H13" stroke="currentColor" />
-      <path d="M4.5 10V7.5" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M8 10V5.5" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M11.5 10V4.5" stroke="currentColor" strokeWidth="1.5" />
+      <rect fill="currentColor" height="3.25" rx="0.6" width="2" x="4" y="8.5" />
+      <rect fill="currentColor" height="5.25" rx="0.6" width="2" x="7" y="6.5" />
+      <rect fill="currentColor" height="7.25" rx="0.6" width="2" x="10" y="4.5" />
     </BaseIcon>
   );
 }
@@ -60,11 +73,11 @@ export function IconNavSettings(props: IconProps) {
   return (
     <BaseIcon {...props}>
       <path
-        d="M8 4.25C5.93 4.25 4.25 5.93 4.25 8C4.25 10.07 5.93 11.75 8 11.75C10.07 11.75 11.75 10.07 11.75 8C11.75 5.93 10.07 4.25 8 4.25ZM8 5.5C9.38 5.5 10.5 6.62 10.5 8C10.5 9.38 9.38 10.5 8 10.5C6.62 10.5 5.5 9.38 5.5 8C5.5 6.62 6.62 5.5 8 5.5Z"
+        d="M8 4.25C5.93 4.25 4.25 5.93 4.25 8C4.25 10.07 5.93 11.75 8 11.75C10.07 11.75 11.75 10.07 11.75 8C11.75 5.93 10.07 4.25 8 4.25ZM8 5.7C9.27 5.7 10.3 6.73 10.3 8C10.3 9.27 9.27 10.3 8 10.3C6.73 10.3 5.7 9.27 5.7 8C5.7 6.73 6.73 5.7 8 5.7Z"
         fill="currentColor"
       />
       <path
-        d="M8 2.5L8.55 3.6C8.86 3.67 9.16 3.79 9.43 3.95L10.6 3.55L11.4 4.95L10.42 5.7C10.47 5.99 10.47 6.29 10.42 6.58L11.4 7.35L10.6 8.75L9.43 8.35C9.16 8.51 8.86 8.63 8.55 8.7L8 9.8L7.45 8.7C7.14 8.63 6.84 8.51 6.57 8.35L5.4 8.75L4.6 7.35L5.58 6.58C5.53 6.29 5.53 5.99 5.58 5.7L4.6 4.95L5.4 3.55L6.57 3.95C6.84 3.79 7.14 3.67 7.45 3.6L8 2.5Z"
+        d="M8 2.5V3.5M8 12.5V13.5M3.5 8H2.5M13.5 8H12.5M10.95 5.05L11.65 4.35M4.35 11.65L5.05 10.95M5.05 5.05L4.35 4.35M11.65 11.65L10.95 10.95"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -76,9 +89,9 @@ export function IconNavSettings(props: IconProps) {
 export function IconNavBilling(props: IconProps) {
   return (
     <BaseIcon {...props}>
-      <rect height="8" rx="1.2" stroke="currentColor" width="11" x="2.5" y="4" />
-      <path d="M2.5 6.5H13.5" stroke="currentColor" />
-      <path d="M5 10.25H7.5" stroke="currentColor" />
+      <rect height="8" rx="1.4" stroke="currentColor" width="11" x="2.5" y="4" />
+      <path d="M2.5 6.25H13.5" stroke="currentColor" />
+      <rect fill="currentColor" height="1.5" rx="0.5" width="2.8" x="4.2" y="8.6" />
     </BaseIcon>
   );
 }
