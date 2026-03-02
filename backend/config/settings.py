@@ -30,6 +30,30 @@ def csv_env(name, default):
     return [item.strip() for item in value.split(',') if item.strip()]
 
 
+def sanitize_postgres_options(db_config):
+    if db_config.get('ENGINE') != 'django.db.backends.postgresql':
+        return db_config
+    options = db_config.get('OPTIONS')
+    if not isinstance(options, dict):
+        return db_config
+
+    allowed = {
+        'application_name',
+        'channel_binding',
+        'connect_timeout',
+        'gssencmode',
+        'options',
+        'sslcert',
+        'sslcrl',
+        'sslkey',
+        'sslmode',
+        'sslrootcert',
+        'target_session_attrs'
+    }
+    db_config['OPTIONS'] = {key: value for key, value in options.items() if key in allowed}
+    return db_config
+
+
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'unsafe-dev-secret-key-change-me')
 DEBUG = os.getenv('DJANGO_DEBUG', '1') == '1'
 ALLOWED_HOSTS = csv_env('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost')
@@ -96,8 +120,9 @@ if DB_ENGINE in {'sqlite', 'django.db.backends.sqlite3'}:
         }
     }
 elif DATABASE_URL:
+    parsed_db = dj_database_url.parse(DATABASE_URL, conn_max_age=DB_CONN_MAX_AGE)
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=DB_CONN_MAX_AGE)
+        'default': sanitize_postgres_options(parsed_db)
     }
 else:
     DATABASES = {
@@ -111,6 +136,7 @@ else:
             'CONN_MAX_AGE': DB_CONN_MAX_AGE
         }
     }
+    DATABASES['default'] = sanitize_postgres_options(DATABASES['default'])
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
