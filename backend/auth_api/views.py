@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.utils import OperationalError, ProgrammingError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_http_methods
@@ -13,8 +14,12 @@ from .models import UserProfile
 
 
 def _profile_for_user(user):
-    profile, _ = UserProfile.objects.get_or_create(user=user)
-    return profile
+    try:
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        return profile
+    except (ProgrammingError, OperationalError):
+        # Deployed code can run before migrations are applied on remote DB.
+        return None
 
 
 def _serialize_user(user):
@@ -24,8 +29,8 @@ def _serialize_user(user):
         'email': getattr(user, 'email', ''),
         'first_name': getattr(user, 'first_name', ''),
         'last_name': getattr(user, 'last_name', ''),
-        'account_type': profile.account_type,
-        'profile_photo': profile.profile_photo
+        'account_type': getattr(profile, 'account_type', 'personal'),
+        'profile_photo': getattr(profile, 'profile_photo', '')
     }
 
 
@@ -125,9 +130,10 @@ def signup_view(request):
     with transaction.atomic():
         user = user_model.objects.create_user(password=password, **create_kwargs)
         profile = _profile_for_user(user)
-        profile.account_type = account_type
-        profile.profile_photo = str(profile_photo)
-        profile.save(update_fields=['account_type', 'profile_photo', 'updated_at'])
+        if profile is not None:
+            profile.account_type = account_type
+            profile.profile_photo = str(profile_photo)
+            profile.save(update_fields=['account_type', 'profile_photo', 'updated_at'])
 
     return JsonResponse(
         {
@@ -166,6 +172,11 @@ def profile_view(request):
         return JsonResponse({'detail': 'User not found.'}, status=404)
 
     profile = _profile_for_user(user)
+    if profile is None:
+        return JsonResponse(
+            {'detail': 'User profile storage is not available yet. Apply backend migrations.'},
+            status=503
+        )
     user_fields_to_update = []
     profile_fields_to_update = []
 
