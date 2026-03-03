@@ -716,6 +716,223 @@ input[type=submit].default,
   font-size: 11px;
 }
 
+/* Changelist refinements */
+div.breadcrumbs,
+div.breadcrumbs a,
+div.breadcrumbs a:link,
+div.breadcrumbs a:visited {
+  color: #4d6177;
+}
+
+div.breadcrumbs a:hover {
+  color: #0f6b33;
+}
+
+.change-list #content {
+  max-width: 1400px;
+}
+
+.change-list #content > h1 {
+  margin-bottom: 14px;
+}
+
+.change-list .object-tools {
+  align-items: center;
+  display: flex;
+  float: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin: 0 0 12px;
+}
+
+.change-list .object-tools li {
+  float: none;
+  height: auto;
+  margin: 0;
+}
+
+.change-list .object-tools a:link,
+.change-list .object-tools a:visited {
+  align-items: center;
+  background: linear-gradient(120deg, #178f43 0%, #12a34a 100%);
+  border: 1px solid #159043;
+  border-radius: 10px;
+  box-shadow: 0 6px 14px rgba(18, 126, 59, 0.18);
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  min-height: 36px;
+  padding: 0 14px;
+  text-transform: uppercase;
+}
+
+.change-list .object-tools a:hover {
+  background: linear-gradient(120deg, #0f7d39 0%, #0f9241 100%);
+  border-color: #0f7d39;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.change-list .object-tools a.addlink {
+  background-image: none;
+  padding-right: 14px;
+}
+
+.change-list .filtered {
+  min-height: 0;
+}
+
+.change-list #changelist {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 240px;
+}
+
+.change-list #changelist .changelist-form-container {
+  min-width: 0;
+}
+
+.change-list #toolbar {
+  align-items: center;
+  background: #f8fbff;
+  border: 1px solid var(--mp-border);
+  border-radius: 12px;
+  display: flex;
+  margin-bottom: 14px;
+  min-height: 56px;
+  padding: 10px 12px;
+}
+
+.change-list #toolbar form {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.change-list #toolbar #searchbar {
+  border: 1px solid var(--mp-border-strong);
+  border-radius: 9px;
+  height: 38px;
+  max-width: 100%;
+  min-width: 260px;
+  padding: 7px 10px;
+}
+
+.change-list #toolbar form input[type="submit"] {
+  background: #ffffff;
+  border: 1px solid var(--mp-border-strong);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  height: 36px;
+  padding: 0 12px;
+}
+
+.change-list #toolbar form input[type="submit"]:hover {
+  background: #edf4ff;
+  border-color: #bbcadb;
+}
+
+.change-list #changelist-search img {
+  opacity: 0.7;
+}
+
+.change-list .actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.change-list .actions select {
+  min-width: 200px;
+}
+
+.change-list .results {
+  margin-top: 10px;
+}
+
+.change-list #result_list thead th {
+  background: linear-gradient(180deg, #f8fbff 0%, #f1f7fd 100%);
+}
+
+.change-list #result_list tbody th,
+.change-list #result_list tbody td {
+  font-size: 14px;
+}
+
+.change-list #result_list tbody th a {
+  color: #0f4d86;
+  font-weight: 700;
+}
+
+.change-list #changelist-filter {
+  margin-left: 0;
+}
+
+.change-list #changelist-filter h2 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.change-list #changelist-filter h3 {
+  padding-top: 10px;
+}
+
+.change-list #changelist-filter li {
+  margin: 0 0 8px;
+}
+
+.change-list #changelist-filter li.selected {
+  background: #f0f6ff;
+  border-left: 3px solid #1f5f95;
+  border-radius: 0 8px 8px 0;
+  margin-left: -12px;
+  padding: 2px 0 2px 9px;
+}
+
+.change-list #changelist-filter a {
+  color: #425a73;
+  font-size: 14px;
+}
+
+#nav-sidebar .module caption a.section {
+  color: #2b4f71;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.55px;
+  text-transform: uppercase;
+}
+
+#nav-sidebar .module th a {
+  color: #1b4a70;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#nav-sidebar .module th a:hover {
+  color: #0f6b33;
+}
+
+.toggle-nav-sidebar {
+  background: #ffffff;
+  color: #36638d;
+}
+
+.toggle-nav-sidebar:hover {
+  background: #eef4fc;
+  color: #0f6b33;
+}
+
 /* Mobile */
 @media (max-width: 1024px) {
   #content {
@@ -723,6 +940,10 @@ input[type=submit].default,
   }
 
   .dashboard #content.colMS {
+    grid-template-columns: 1fr;
+  }
+
+  .change-list #changelist {
     grid-template-columns: 1fr;
   }
 }
