@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block branding %}
+  <div class="mp-branding">
+    <img alt="MultiPaas" class="mp-branding-logo" src="{% static 'admin_theme/MultiPaasLogo.png' %}" />
+    <div class="mp-branding-copy">
+      <h1 id="site-name"><a href="{% url 'admin:index' %}">MultiPaas Admin</a></h1>
+      <p class="mp-branding-subtitle">Platform Control Center</p>
+    </div>
+  </div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
