@@ -565,10 +565,23 @@ input[type=submit].default,
 .dashboard #content.colMS {
   box-sizing: border-box;
   display: grid;
-  gap: 20px;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px 22px;
+  grid-template-columns: minmax(680px, 1fr) 320px;
   margin-right: 0;
-  max-width: 1240px;
+  max-width: 1320px;
+  width: auto;
+}
+
+.dashboard #content {
+  width: auto;
+}
+
+.dashboard #content > h1 {
+  grid-column: 1 / -1;
+  font-size: 42px;
+  letter-spacing: -0.8px;
+  line-height: 1.06;
+  margin: 2px 0 6px;
 }
 
 .dashboard #content-main,
@@ -579,15 +592,19 @@ input[type=submit].default,
 }
 
 .dashboard #content-main {
+  grid-column: 1;
   min-width: 0;
 }
 
 .dashboard #content-related {
   background: transparent;
+  grid-column: 2;
+  min-width: 0;
 }
 
 .dashboard #content-main .module {
   border-radius: 12px;
+  margin-bottom: 14px;
 }
 
 .dashboard #content-main .module caption {
@@ -941,6 +958,16 @@ div.breadcrumbs a:hover {
 
   .dashboard #content.colMS {
     grid-template-columns: 1fr;
+    max-width: none;
+    width: 100%;
+  }
+
+  .dashboard #content > h1 {
+    font-size: 34px;
+  }
+
+  .dashboard #content-related {
+    grid-column: 1;
   }
 
   .change-list #changelist {
